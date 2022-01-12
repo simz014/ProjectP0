@@ -3,6 +3,10 @@ import java.sql.DriverManager
 import java.sql.Connection
 import java.io._
 import javax.crypto.BadPaddingException
+import java.io.File
+import java.io.PrintWriter
+import java.util.Calendar
+import scala.util.control._
 
 object Payroll {
 
@@ -13,7 +17,7 @@ object Payroll {
        var  rate= 12.50
        var paymentAmount:Double=0;
        var typeEmployment="Hourly" 
-     
+       val writeLog =new PrintWriter(new File("queryLog.log"))
 
         // connect to the database named "mysql" on the localhost
     val driver = "com.mysql.cj.jdbc.Driver"
@@ -30,18 +34,42 @@ object Payroll {
    
       // create the statement, and run the select query
      val statement = connection.createStatement()
-     /*This is ran once to create the Employee table for Payroll Database 
-     val creat_Table = statement.executeUpdate("Create table Employee(EmployeeID serial, firstName varchar(255),lastName varchar(255), Employment_Type varchar(255),  "+
-                                             " hoursWorked Decimal (10,2), Hourly_Rate Decimal(10,2),Date_Time datetime default current_timestamp on Update current_timestamp);") 
+     val statement2 = connection.createStatement()
+   
+     /*This is ran once to create the Employee table for Payroll Database **/
+     /**
+     val creat_Table = statement.executeUpdate("Create table EmployeePay(PaycheckID serial, EmployeeID Int, firstName varchar(45),lastName varchar(45), Employment_Type varchar(255),"+ 
+                                            " hoursWorked Decimal (10,2), Hourly_Rate Decimal(10,2),Date_Time datetime default current_timestamp on Update current_timestamp,"+
+                                            " PRIMARY KEY (PaycheckID), FOREIGN KEY(EmployeeID) REFERENCES `payroll`.`company`(EmployeeID));")
+     writeLog.write(Calendar.getInstance().getTimeInMillis + " - Excecuting 'Create table EmployeePay(PaycheckID serial, EmployeeID Int, firstName varchar(45),lastName varchar(45), Employment_Type varchar(255),"+ 
+                                            " hoursWorked Decimal (10,2), Hourly_Rate Decimal(10,2),Date_Time datetime default current_timestamp on Update current_timestamp,"+
+                                            " PRIMARY KEY (PaycheckID), FOREIGN KEY(EmployeeID) REFERENCES `payroll`.`company`(EmployeeID);'\n")
+ 
                                             */
-      /*This is ran once to create the view in database*/  
-    /** val creat_view = statement.executeUpdate("create view  Paycheck AS select EmployeeID, concat(firstName ,' ', lastName) as FullName, Employment_Type,"+
-                                               " Hourly_Rate,hoursWorked,(hoursWorked-40) as Overtime, (Hourly_Rate*hoursWorked ) as TotalPay from Employee where EmployeeID =(SELECT max(EmployeeID) FROM Employee);") 
-                                                                                                     
-                                   **/
+      /*This is ran once to create the view in database  
+    val creat_view = statement.executeUpdate("create view  Paycheck AS select PaycheckID, concat(firstName ,' ', lastName) as FullName, Employment_Type,"+
+                                               " Hourly_Rate,hoursWorked,(hoursWorked-40) as Overtime, (Hourly_Rate*hoursWorked ) as TotalPay from Employeepay where PaycheckID =(SELECT max(PaycheckID) FROM Employeepay);") 
+                                           */                                                          
+                                  
+       println("================================================================================")                           
+       println("              "+   "Employee Payroll Calculator "+  "    ")
+       println("================================================================================")   
         
-            println("Please eneter your First Name(A-Z)")
-               var firstName=scanner.nextLine() 
+        var arrOfIds= Array(100,101,103,104,105,106,107,108,109,110)
+       println(" Please enter your EmployeeID to Begin")
+         var empID=scanner.nextInt()
+         var counter=3
+       while( (arrOfIds contains (empID))!=true){
+       println("EmployeeID is not in company Database, try again!")
+       empID=scanner.nextInt()
+       if(counter>2) 
+           println("You made too many attempts goodbye") 
+           counter=counter+1
+          empID=scanner.nextInt()
+       }
+             scanner.nextLine() 
+       println("Please eneter your First Name(A-Z)")
+          var firstName=scanner.nextLine() 
         
            println("Please eneter your Last Name(A-Z)")
           var  lastName=scanner.nextLine()
@@ -71,13 +99,17 @@ object Payroll {
          println("FullName :" +firstName+" "+lastName+ " :Hours Worked:" +hoursWorked)
          println("========================================================================================================")
           var verification=scanner.next().toString.toUpperCase()
-          val query="INSERT INTO employee(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
+          val query="INSERT INTO employeepay(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
                                                      ""+hoursWorked+","+rate+");" 
+   
        // println(query)
         val resultSet1=statement.executeUpdate(query)
-
+        writeLog.write(Calendar.getInstance().getTimeInMillis + " - Excecuting 'INSERT INTO employeepay(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
+                                                     ""+hoursWorked+","+rate+");'\n")
+         /** code cause user if input is accurrate if No it deletes from DB **/
           while (verification =="N"){
-            val resultSet2=statement.executeUpdate("delete from employee order by EmployeeID desc limit 1;")
+            val resultSet2=statement.executeUpdate("delete from employeepay order by EmployeeID desc limit 1;")
+            writeLog.write(Calendar.getInstance().getTimeInMillis +" -Executing 'delete from employeepay order by EmployeeID desc limit 1;'\n")
                println("Please try again")
                println("Please eneter your First Name(A-Z)")
                var firstName=scanner.next() 
@@ -89,19 +121,24 @@ object Payroll {
             println(" Is this info correct? enter Y/N")
           println("FullName :" +firstName+" "+lastName+ " :Hours Worked:" +hoursWorked)
            println("========================================================================================================")
-          val query="INSERT INTO employee(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
+          val query="INSERT INTO employeepay(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
                                                      ""+hoursWorked+","+rate+");" 
-
+         
             val resultSet1=statement.executeUpdate(query)
+           writeLog.write(Calendar.getInstance().getTimeInMillis +" -Executing 'INSERT INTO employee(firstName, lastName,Employment_Type, hoursWorked,Hourly_Rate) Values ('"+firstName+"','" +lastName+"','"+typeEmployment+"'," +
+                                                     ""+hoursWorked+","+rate+");'\n")
+                        writeLog.close()
+
                verification=scanner.next().toString.toUpperCase() 
+
         }
          /** Printing the headings**/
        println("=============================================================================================================================================")                    
-       println("Employee_ID "+ "\t" +"FullName"+ "\t "  +"EmployeeType "+ "\t\t"  +"Hourly_Rate "+ "\t\t"  +"HoursWorked "+ "\t\t" +"Overtime "+ "\t\t"   +"TotalPay ")
+       println("PayCheckID "+ "\t" +"FullName"+ "\t "  +"EmployeeType "+ "\t\t"  +"Hourly_Rate "+ "\t\t"  +"HoursWorked "+ "\t\t" +"Overtime "+ "\t\t"   +"TotalPay ")
        println("=============================================================================================================================================")
         //val resultDb = statement.executeQuery("SELECT * FROM employee;")
         val resultDbView = statement.executeQuery("SELECT * FROM Paycheck;")
-                                                                                 
+          writeLog.write(Calendar.getInstance().getTimeInMillis +" -Executing 'SELECT * FROM Paycheck;'\n")                                                                         
       while ( resultDbView.next())
         
         println(resultDbView.getString(1) + "\t\t " + resultDbView.getString(2) + " \t\t  " + resultDbView.getString(3)+ " \t\t  "+resultDbView.getString(4)
@@ -113,6 +150,8 @@ object Payroll {
       case e: Exception => e.printStackTrace
     }
     connection.close()
-}
+    writeLog.close()
 
+}
+ 
 }
